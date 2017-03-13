@@ -1,20 +1,19 @@
 from random import randint
 
 class Game:
-    def shoot_ship(self, x, y, board):
-        if isinstance(board, Board):
-            if (x, y) in board:
-                board.battlefield[x][y] = "x"
-            else:
-                board.battlefield[x][y] = "*"
-
-    def look_at_the_board(self, board):
-        for row in board.battlefield:
-            print(row + '\n')
-
-class Board:
-    def __init__(self):
+    def __init__(self, ships):
         self.battlefield = [[0] * 10 for col in range(10)]
+        self.ships = ships
+
+    def shoot_ship(self, x, y):
+        if (x, y) in self.ships.positions:
+            self.battlefield[x][y] = "x"
+        else:
+            self.battlefield[x][y] = "*"
+
+    def look_at_the_board(self):
+        for row in self.battlefield:
+            print(row + '\n')
 
 class Ships:
     def __init__(self):
@@ -116,4 +115,3 @@ class Ships:
                     for i in range(1):
                         self.positions.add((random_number + i, col))
                         self.block_positions(random_number + i, col)
-                        
