@@ -5,7 +5,7 @@ import pickle
 import json
 
 class ParamHandlerException(BaseException):
-    raise Exception
+    pass
 
 class ParamHandler(metaclass=ABCMeta):
     types = {}
