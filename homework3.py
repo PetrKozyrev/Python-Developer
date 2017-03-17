@@ -1,28 +1,8 @@
 # 1
-from datetime import datetime as dt
-
-def days_to_new_year():
-    current_year = dt.now().year
-    if current_year % 4 == 0:
-        month_dict = {1: 31, 2: 29, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31,
-                  9: 30, 10: 31, 11: 30, 12: 31}
-        number_of_days = 366
-    else:
-        month_dict = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31,
-                  9: 30, 10: 31, 11: 30, 12: 31}
-        number_of_days = 365
-
-    current_month = dt.now().month
-    current_day = dt.now().day
-
-    day_of_the_year = 0
-    for key, value in month_dict.items():
-        if key < current_month:
-            day_of_the_year += month_dict[key]
-        elif key == current_month:
-            day_of_the_year += current_day
-    return "Days to New Year: ", number_of_days - day_of_the_year
-print(days_to_new_year())
+import datetime
+today = datetime.datetime.now().date()
+new_year = datetime.date(datetime.datetime.now().year, 12, 31)
+print((new_year - today).days)
 
 # 2
 def palindrome_finder(sequence):
