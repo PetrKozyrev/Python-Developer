@@ -73,6 +73,3 @@ class PickleParamHandler(ParamHandler):
     def write(self, file):
         with open(file, 'wb') as f:
             pickle.dump(self.params, f)
-        """
-        Запись в формате XML параметров self.params
-        """
