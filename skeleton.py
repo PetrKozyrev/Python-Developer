@@ -23,7 +23,7 @@ class Edge:
         self.coverage += 1
 
     def __len__(self):
-        return len(self.edge_sequence)
+        return len(self.edge_sequence) - Graph.k
 
     def merge(self, following_edge):
         if not isinstance(following_edge, Edge):
@@ -31,7 +31,7 @@ class Edge:
 
         self.edge_sequence += following_edge.edge_sequence[-1]
         self.v2 = following_edge.v2
-        self.coverage = 1
+        self.coverage = round(self.coverage + following_edge.coverage) / 2
         return self
 
     def __str__(self):
