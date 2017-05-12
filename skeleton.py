@@ -102,24 +102,45 @@ class Graph:
             previous_kmer = previous_edge.v1.seq
             next_kmer = next_edge.v2.seq
 
-            self.g[previous_kmer].output = {previous_edge.merge(next_edge).edge_sequence:
-                                                previous_edge.merge(next_edge)}
+            merged_edge = previous_edge.merge(next_edge)
+            self.g[previous_kmer].output = {merged_edge.edge_sequence : merged_edge}
+            self.g[next_kmer].input = {merged_edge.edge_sequence : merged_edge}
 
-            self.g[next_kmer].input = {previous_edge.merge(next_edge).edge_sequence:
-                                                previous_edge.merge(next_edge)}
             del self.g[kmer]
     # Delete redundant vertex
 
-    def save_dot(self, outp):
+    def check_vertex_show_sequences(self):
         digraph = gv.Digraph(format='svg')
-        for kmer in self.g:
-            digraph.node(kmer)
 
-        for vertex in self.g.values():
-            for edge in vertex.output:
-                digraph.edge(vertex.seq, vertex.output[edge].v2.seq,
-                             label="{}".format(vertex.output[edge].coverage))
+        if Vertex.show_sequences:
+            for kmer in self.g:
+                digraph.node(kmer)
+        else:
+            for kmer in self.g:
+                digraph.node(kmer, label="")
 
+        return digraph
+
+    def check_edge_show_sequences(self):
+        digraph = self.check_vertex_show_sequences()
+
+        if Edge.show_sequences:
+            for vertex in self.g.values():
+                for edge in vertex.output:
+                    digraph.edge(vertex.seq, vertex.output[edge].v2.seq,
+                                 label="{}".format(edge))
+        else:
+            for vertex in self.g.values():
+                for edge in vertex.output:
+                    digraph.edge(vertex.seq, vertex.output[edge].v2.seq,
+                                 label="C: {} L: {}".format(
+                                     vertex.output[edge].coverage,
+                                     len(edge) - Graph.k))
+
+        return digraph
+
+    def save_dot(self, outp):
+        digraph = self.check_edge_show_sequences()
         return digraph.render(outp)
 
 
@@ -187,6 +208,7 @@ def main():
 
     if args.compress:
         graph.compress()
+
     graph.save_dot(args.output)
 
 
