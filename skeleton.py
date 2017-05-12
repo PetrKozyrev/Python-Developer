@@ -3,7 +3,7 @@ from tqdm import tqdm
 import graphviz as gv
 
 
-class DeBruijnException(BaseException):
+class DeBruijnException(Exception):
     pass
 
 
@@ -31,14 +31,13 @@ class Edge:
 
         self.edge_sequence += following_edge.edge_sequence[-1]
         self.v2 = following_edge.v2
-        self.coverage = round(self.coverage + following_edge.coverage) / 2
+        self.coverage = (self.coverage * len(self) +
+                         following_edge.coverage * len(following_edge)) / \
+                        (len(self) + len(following_edge))
         return self
 
     def __str__(self):
         return str(self.edge_sequence)
-
-
-edge_sequences = set()
 
 
 class Vertex:
@@ -46,16 +45,19 @@ class Vertex:
 
     def __init__(self, seq):
         self.seq = seq
-        self.input = set()
-        self.output = set()
+        self.input = {}
+        self.output = {}
 
     def add_edge(self, other):
         if not isinstance(other, Vertex):
             raise DeBruijnException("'other' must be Vertex instance!")
 
-        self.output.add(Edge(self, other))
-        other.input.add(Edge(self, other))
-        edge_sequences.add(Edge(self, other).edge_sequence)
+        if Edge(self, other).edge_sequence not in self.output:
+            self.output[Edge(self, other).edge_sequence] = Edge(self, other)
+            other.input[Edge(self, other).edge_sequence] = Edge(self, other)
+        else:
+            self.output[Edge(self, other).edge_sequence].inc_coverage()
+            other.input[Edge(self, other).edge_sequence].inc_coverage()
 
     def __str__(self):
         return str(self.seq)
@@ -73,32 +75,18 @@ class Graph:
         self.g = {}
 
     def add_edge(self, seq1, seq2):
-        if not isinstance(seq1, Vertex) or not isinstance(seq2,  Vertex):
-            raise DeBruijnException("seq1 and seq2 must be Vertex instances!")
+        self.g[seq1].add_edge(self.g[seq2])
 
-        if seq1.seq in self.g and seq2.seq in self.g:
-            edge_sequence = seq1.seq + seq2.seq[-1]
-            for v in self.g.values():
-                for edge in v.output:
-                    if edge.edge_sequence == edge_sequence:
-                        edge.inc_coverage()
-        else:
-            if seq1.seq not in self.g and seq2.seq not in self.g:
-                seq1.add_edge(seq2)
-                self.g[seq1.seq] = seq1
-                self.g[seq2.seq] = seq2
-            elif seq1.seq in self.g and seq2.seq not in self.g:
-                self.g[seq1.seq].add_edge(seq2)
-                self.g[seq2.seq] = seq2
-            elif seq1.seq not in self.g and seq2.seq in self.g:
-                self.g[seq1.seq] = seq1
-                self.g[seq1.seq].add_edge(self.g[seq2.seq])
+    def check_vertex_existence(self, v1, v2):
+        if v1 not in self.g:
+            self.g[v1] = Vertex(v1)
+        if v2 not in self.g:
+            self.g[v2] = Vertex(v2)
 
     def add_seq(self, seq):
         for i in range(len(seq) - self.k):
-            first_seq = Vertex(seq[i: i+self.k])
-            second_seq = Vertex(seq[i+1: i+self.k+1])
-            self.add_edge(first_seq, second_seq)
+            self.check_vertex_existence(seq[i: i+self.k], seq[i+1: i+self.k+1])
+            self.add_edge(seq[i: i+self.k], seq[i+1: i+self.k+1])
 
     def compress(self):
         to_delete = []  # List of redundant vertices
@@ -108,14 +96,17 @@ class Graph:
 
         for kmer in to_delete:
             mid_vertex = self.g[kmer]
-            previous_edge = next(iter(mid_vertex.input))
-            next_edge = next(iter(mid_vertex.output))
+            previous_edge = next(iter(mid_vertex.input.values()))
+            next_edge = next(iter(mid_vertex.output.values()))
 
             previous_kmer = previous_edge.v1.seq
             next_kmer = next_edge.v2.seq
 
-            self.g[previous_kmer].output = {previous_edge.merge(next_edge)}
-            self.g[next_kmer].input = {previous_edge.merge(next_edge)}
+            self.g[previous_kmer].output = {previous_edge.merge(next_edge).edge_sequence:
+                                                previous_edge.merge(next_edge)}
+
+            self.g[next_kmer].input = {previous_edge.merge(next_edge).edge_sequence:
+                                                previous_edge.merge(next_edge)}
             del self.g[kmer]
     # Delete redundant vertex
 
@@ -126,8 +117,8 @@ class Graph:
 
         for vertex in self.g.values():
             for edge in vertex.output:
-                digraph.edge(vertex.seq, edge.v2.seq, label="{}".format(
-                             edge.coverage))
+                digraph.edge(vertex.seq, vertex.output[edge].v2.seq,
+                             label="{}".format(vertex.output[edge].coverage))
 
         return digraph.render(outp)
 
