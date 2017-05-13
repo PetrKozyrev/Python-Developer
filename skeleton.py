@@ -52,12 +52,13 @@ class Vertex:
         if not isinstance(other, Vertex):
             raise DeBruijnException("'other' must be Vertex instance!")
 
-        if Edge(self, other).edge_sequence not in self.output:
-            self.output[Edge(self, other).edge_sequence] = Edge(self, other)
-            other.input[Edge(self, other).edge_sequence] = Edge(self, other)
+        edge = Edge(self, other)
+        if edge.edge_sequence not in self.output:
+            self.output[edge.edge_sequence] = edge
+            other.input[edge.edge_sequence] = edge
         else:
-            self.output[Edge(self, other).edge_sequence].inc_coverage()
-            other.input[Edge(self, other).edge_sequence].inc_coverage()
+            self.output[edge.edge_sequence].inc_coverage()
+            other.input[edge.edge_sequence].inc_coverage()
 
     def __str__(self):
         return str(self.seq)
@@ -103,10 +104,12 @@ class Graph:
             next_kmer = next_edge.v2.seq
 
             merged_edge = previous_edge.merge(next_edge)
-            self.g[previous_kmer].output = {merged_edge.edge_sequence : merged_edge}
-            self.g[next_kmer].input = {merged_edge.edge_sequence : merged_edge}
+            self.g[previous_kmer].output[merged_edge.edge_sequence] = merged_edge
+            self.g[next_kmer].input[merged_edge.edge_sequence] = merged_edge
 
             del self.g[kmer]
+            del self.g[previous_kmer].output[previous_edge.edge_sequence]
+            del self.g[next_kmer].input[next_edge.edge_sequence]
     # Delete redundant vertex
 
     def check_vertex_show_sequences(self):
