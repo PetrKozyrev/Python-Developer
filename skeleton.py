@@ -29,7 +29,7 @@ class Edge:
         if not isinstance(following_edge, Edge):
             raise DeBruijnException("following_edge must be Edge instance!")
 
-        self.edge_sequence += following_edge.edge_sequence[-1]
+        self.edge_sequence += following_edge.edge_sequence[Graph.k:]
         self.v2 = following_edge.v2
         self.coverage = (self.coverage * len(self) +
                          following_edge.coverage * len(following_edge)) / \
@@ -58,7 +58,6 @@ class Vertex:
             other.input[edge.edge_sequence] = edge
         else:
             self.output[edge.edge_sequence].inc_coverage()
-            other.input[edge.edge_sequence].inc_coverage()
 
     def __str__(self):
         return str(self.seq)
@@ -104,6 +103,7 @@ class Graph:
             next_kmer = next_edge.v2.seq
 
             merged_edge = previous_edge.merge(next_edge)
+            print(merged_edge)
             self.g[previous_kmer].output[merged_edge.edge_sequence] = merged_edge
             self.g[next_kmer].input[merged_edge.edge_sequence] = merged_edge
 
@@ -134,11 +134,12 @@ class Graph:
                                  label="{}".format(edge))
         else:
             for vertex in self.g.values():
-                for edge in vertex.output:
-                    digraph.edge(vertex.seq, vertex.output[edge].v2.seq,
+                for edge in vertex.output.values():
+                    print(edge)
+                    digraph.edge(vertex.seq, edge.v2.seq,
                                  label="C: {} L: {}".format(
-                                     vertex.output[edge].coverage,
-                                     len(edge) - Graph.k))
+                                     edge.coverage,
+                                     len(edge)))
 
         return digraph
 
